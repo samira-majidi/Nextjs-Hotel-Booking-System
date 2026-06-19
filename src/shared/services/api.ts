@@ -1,6 +1,13 @@
 import axios from 'axios';
 
-export const api = axios.create({
+const api = axios.create({
+  // آدرس پایه رو از فایلی که تو قدم دوم ساختیم می‌خونه
   baseURL: process.env.NEXT_PUBLIC_API_URL,
-  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  // این خط برای ارسال کوکی‌ها و توکن‌های احراز هویت واجبه
+  withCredentials: true, 
 });
+
+export default api;

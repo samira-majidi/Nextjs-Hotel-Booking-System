@@ -1,15 +1,32 @@
 import Image from 'next/image';
 
-import FAQSection from '@/components/section/home/FAQsection';
-import WhyChooseUs from '@/components/section/home/WhyChooseUs';
-import MostBookedHotels from '@/features/hotels/components/MostBookedHotel';
-import PopularDestinations from '@/features/hotels/components/Populardestination';
-import SearchForm from '@/features/hotels/components/searchForm';
+import { fetchCitiesFromApi } from '@/entities/hotel/api/getCities';
+// 👇 مسیر این ایمپورت رو بر اساس فایلی که ساختی تنظیم کن
+import { fetchFeaturedHotels } from '@/entities/hotel/api/getFeaturedHotel';
+import SearchForm from '@/features/search-hotel/ui/searchForm';
+import { mergeCityData } from '@/shared/utils/cityUtils';
+import FAQSection from '@/widgets/home-section/ui/FAQsection';
+import MostBookedHotels from '@/widgets/home-section/ui/MostBookedHotel';
+import PopularDestinations from '@/widgets/home-section/ui/Populardestination';
+import WhyChooseUs from '@/widgets/home-section/ui/WhyChooseUs';
 
-export default function Page() {
+export default async function Page() {
+  // ⚡ اجرای همزمان هر دو درخواست برای پرفورمنس بهتر
+  const [apiCities, featuredHotels] = await Promise.all([
+    fetchCitiesFromApi(),
+    fetchFeaturedHotels(),
+  ]);
+
+console.log("خروجی API هتل‌های ویژه:", featuredHotels); // 👈 این خط رو اضافه کن
+
+  const finalDestinations = mergeCityData(apiCities);
+
   return (
     <main>
-      <section className="relative w-full overflow-hidden flex flex-col items-center justify-center px-4">
+      {/* 1. overflow-hidden حذف شد */}
+      {/* 2. z-50 اضافه شد تا این سکشن همیشه روی بقیه باشه */}
+      <section className="relative z-50 w-full flex flex-col items-center justify-center px-4">
+
         {/* تصویر پس‌زمینه */}
         <Image
           src="/hero1.png"
@@ -41,16 +58,19 @@ export default function Page() {
           </p>
 
           {/* کامپوننت فرم جستجو */}
-          <div className="w-full flex justify-center">
+          <div className="w-full flex justify-center pb-12 md:pb-20 mt-4">
             <SearchForm />
           </div>
         </div>
       </section>
 
-      <PopularDestinations />
-      <MostBookedHotels/>
-      <WhyChooseUs/>
-      <FAQSection/>
+      <PopularDestinations destinations={finalDestinations} />
+      
+      {/* 👇 دیتای دریافت شده به کامپوننت پاس داده شد */}
+      <MostBookedHotels hotels={featuredHotels} />
+      
+      <WhyChooseUs />
+      <FAQSection />
     </main>
   );
 }
