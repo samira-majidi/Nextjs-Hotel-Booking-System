@@ -1,26 +1,27 @@
 "use client";
-
-import 'react-day-picker/dist/style.css'; 
-
-import { differenceInDays, startOfToday } from 'date-fns';
+import { clsx } from 'clsx';
+import { differenceInDays, endOfMonth, format, startOfMonth, startOfToday } from 'date-fns';
 import React, { useState } from 'react';
+//import type { ClassNames } from "react-day-picker";
 import { DateRange, DayPicker } from 'react-day-picker';
 
+import { useBookingPrice, useMonthCalendarPrices } from '../hooks/useRoomPricing';
+
 interface RoomDatePickerModalProps {
+  roomId: string;
   onClose: () => void;
-  onApply: (checkIn: Date, checkOut: Date) => void;
-  // اضافه کردن مقادیر اولیه برای دریافت از URL یا فرم
+  onApply: (checkIn: Date, checkOut: Date, totalPrice?: number) => void;
   initialCheckIn?: string | null; 
   initialCheckOut?: string | null;
 }
 
 export const RoomDatePickerModal: React.FC<RoomDatePickerModalProps> = ({ 
-  onClose, 
+  roomId,
+  onClose,
   onApply,
   initialCheckIn,
   initialCheckOut
 }) => {
-  // مقداردهی اولیه state با استفاده از تاریخ‌های پاس داده شده
   const [range, setRange] = useState<DateRange | undefined>(() => {
     if (initialCheckIn && initialCheckOut) {
       return {
@@ -31,84 +32,154 @@ export const RoomDatePickerModal: React.FC<RoomDatePickerModalProps> = ({
     return undefined;
   });
 
-  // محاسبه تعداد شب
+  const [currentMonth, setCurrentMonth] = useState<Date>(() => range?.from || new Date());
+
+  const monthStartStr = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
+  const monthEndStr = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
+
+  const checkInStr = range?.from ? format(range.from, 'yyyy-MM-dd') : null;
+  const checkOutStr = range?.to ? format(range.to, 'yyyy-MM-dd') : null;
+
+  const { data: bookingPriceData, isLoading: isCalculatingPrice } = useBookingPrice(
+    roomId,
+    checkInStr,
+    checkOutStr
+  );
+
+  const { data: monthPrices, isLoading: isMonthPricesLoading } = useMonthCalendarPrices(roomId, monthStartStr, monthEndStr);
+  
   const nights = range?.from && range?.to ? differenceInDays(range.to, range.from) : 0;
   const today = startOfToday();
 
-  return (
-    <>
-      <div 
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 sm:hidden animate-in fade-in duration-300" 
-        onClick={onClose} 
-      />
-      
-      <div 
-        className="fixed inset-0 z-40 hidden sm:block bg-transparent" 
-        onClick={onClose} 
-      />
+  // 👇 کامپوننت سفارشی مینیمال با تِم آبی شیک 👇
+  const CustomDayButton = (props: any) => {
+    const { day, modifiers, ...buttonProps } = props;
+    const date = day.date;
+    const currentDateStr = format(date, 'yyyy-MM-dd');
+    const safePrices = Array.isArray(monthPrices) ? monthPrices : [];
+    const dayPrice = safePrices.find((p: any) => p.date.split('T')[0] === currentDateStr);
 
-      <div className="fixed bottom-0 left-0 right-0 sm:absolute sm:right-auto sm:left-auto sm:bottom-full sm:mb-2 z-50 bg-white sm:border sm:border-gray-100 rounded-t-3xl sm:rounded-[20px] shadow-2xl sm:shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-6 sm:p-6 w-full sm:w-auto max-w-none sm:max-w-[400px] animate-in slide-in-from-bottom-full sm:slide-in-from-bottom-2 sm:fade-in duration-300">
+    const isSelected = modifiers.selected;
+    const isRangeStart = modifiers.range_start;
+    const isRangeEnd = modifiers.range_end;
+    const isRangeMiddle = modifiers.range_middle;
+    const isToday = modifiers.today;
+    const isOutside = modifiers.outside;
+    const isDisabled = modifiers.disabled;
+
+    return (
+      <button
+        {...buttonProps}
+        className={clsx(
+          "relative flex flex-col items-center justify-center w-11 h-12 transition-all outline-none rounded-xl",
+          // استایل پایه: بدون بک‌گراند، فقط در هاور کمی تیره میشه
+          "hover:bg-gray-100",
+          // بازه میانی: یک آبی بسیار ملایم
+          isRangeMiddle && "bg-blue-50 text-blue-900 rounded-none hover:bg-blue-100",
+          // روزهای انتخاب شده (شروع و پایان): آبی شیک
+          isSelected && (isRangeStart || isRangeEnd) && "bg-blue-600 text-white hover:bg-blue-700",
+          isRangeStart && "rounded-l-xl rounded-r-none",
+          isRangeEnd && "rounded-r-xl rounded-l-none",
+          // استایل وقتی فقط یک روز انتخاب شده (نه بازه)
+          isSelected && !isRangeStart && !isRangeEnd && !isRangeMiddle && "bg-blue-600 text-white rounded-xl",
+          // استایل امروز: متن آبی و بولدتر با بک‌گراند خیلی محو
+          isToday && !isSelected && "text-blue-600 font-extrabold bg-blue-50/80",
+          // استایل روزهای خارج از ماه یا غیرفعال
+          (isOutside || isDisabled) && "opacity-30 cursor-not-allowed hover:bg-transparent"
+        )}
+      >
+        <span className="text-[15px] font-medium leading-none">{date.getDate()}</span>
         
-        <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6 sm:hidden" />
+        {/* نمایش قیمت‌های روزانه */}
+        {isMonthPricesLoading ? (
+          <span className="text-[10px] text-gray-300 mt-1">...</span>
+        ) : dayPrice && !isOutside && !isDisabled ? (
+          <span className={clsx(
+            "text-[10px] mt-1 font-medium tracking-tighter",
+            isSelected && (isRangeStart || isRangeEnd) ? "text-blue-200" : "text-gray-400"
+          )}>
+            ${Math.round(Number(dayPrice.price))}
+          </span>
+        ) : null}
+      </button>
+    );
+  };
+  return (
+    // نگهدارنده اصلی که کل صفحه رو می‌گیره و محتوا رو وسط‌چین می‌کنه
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      
+      {/* 🌟 پس‌زمینه: بدون رنگ (شفاف) اما با افکت تار شدن (Blur) */}
+      <div 
+        className="absolute inset-0 bg-white/5 backdrop-blur-md animate-in fade-in duration-300" 
+        onClick={onClose} 
+      />
 
-        <div className="mb-6 flex justify-center">
+      {/* 🌟 بدنه مدال: کاملا وسط صفحه با انیمیشن زوم جذاب */}
+      <div className="relative z-10 bg-white border border-gray-200/60 rounded-[32px] sm:rounded-[24px] shadow-2xl p-6 w-full sm:w-[420px] max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-300">
+        
+        {/* خط کشویی موبایل */}
+        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-8 sm:hidden" />
+
+        <div className="mb-6 flex justify-center overflow-hidden">
           <DayPicker
             mode="range"
             selected={range}
             onSelect={setRange}
-            numberOfMonths={1}
+            month={currentMonth}
+            onMonthChange={setCurrentMonth}
             disabled={{ before: today }}
             showOutsideDays
-            className="font-sans m-0"
-            classNames={{
-              months: "flex flex-col space-y-4",
-              month: "space-y-4",
-              month_caption: "flex justify-center pt-1 relative items-center mb-6",
-              caption_label: "text-lg font-semibold text-gray-900",
-              nav: "space-x-1 flex items-center",
-              nav_button: "h-8 w-8 bg-transparent p-0 flex items-center justify-center rounded-md border border-gray-200 hover:bg-gray-50 transition-colors",
-              nav_button_previous: "absolute left-0",
-              nav_button_next: "absolute right-0",
-              table: "w-full border-collapse space-y-1",
-              head_row: "flex mb-2",
-              head_cell: "text-gray-500 rounded-md w-10 uppercase tracking-wider text-center",
-              row: "flex w-full mt-1",
-              cell: "text-center p-0 relative [&:has([aria-selected])]:bg-blue-50 first:[&:has([aria-selected])]:rounded-l-full last:[&:has([aria-selected])]:rounded-r-full focus-within:relative focus-within:z-20 h-10 w-10 flex items-center justify-center",
-              day: "h-10 w-10 p-0 hover:bg-gray-100 rounded-full cursor-pointer transition-colors",
-              day_today: "!text-green-600 font-bold !bg-green-50 rounded-full",
-              day_outside: "text-gray-300 opacity-50",
-              day_disabled: "text-gray-200 opacity-50 cursor-not-allowed hover:bg-transparent",
-              day_selected: "!bg-blue-100 !text-blue-700 hover:!bg-blue-200 hover:!text-blue-800 focus:!bg-blue-100 focus:!text-blue-700 rounded-full font-semibold",
-              day_range_middle: "aria-selected:!bg-blue-50 aria-selected:!text-blue-900 rounded-none",
-              day_hidden: "invisible",
-            }}
+            components={{
+              DayButton: CustomDayButton
+            }}classNames={{
+  months: "w-full",
+  month: "w-full space-y-4",
+  month_caption: "flex justify-center pt-1 relative items-center mb-6",
+  nav: "flex items-center",
+  // 👇 فلش‌های آبی رنگ و بولد
+   button_previous: "absolute left-2 h-9 w-9 bg-transparent text-blue-700 fill-blue-700 rounded-full flex items-center justify-center hover:bg-blue-100 transition-colors cursor-pointer [&_svg]:fill-blue-700 [&_svg]:w-5 [&_svg]:h-5",
+  button_next: "absolute right-2 h-9 w-9 bg-transparent text-blue-700 fill-blue-700 rounded-full flex items-center justify-center hover:bg-blue-100 transition-colors cursor-pointer [&_svg]:fill-blue-700 [&_svg]:w-5 [&_svg]:h-5",
+ month_grid: "w-full border-collapse",
+  weekdays: "flex w-full justify-between mb-4",
+  weekday: "text-gray-400 font-medium text-[12px] w-11 text-center uppercase tracking-wider",
+  week: "flex w-full justify-between mt-1",
+}}
+
           />
         </div>
 
-        <div className="flex items-center justify-between pt-2">
-          <button 
-            onClick={() => setRange(undefined)}
-            className="text-blue-500 font-medium hover:text-blue-600 transition-colors text-sm underline-offset-4 hover:underline px-2"
-          >
-            Clear dates
-          </button>
-
+        {/* بخش فوتر و دکمه‌ها */}
+        <div className="flex items-center justify-between pt-5 border-t border-gray-100 mt-2">
+         {/* 👑 دکمه پاک کردن با رنگ آبی سلطنتی */}
+        <button 
+          onClick={() => setRange(undefined)}
+               className="text-blue-700 font-bold hover:text-blue-900 text-sm underline-offset-4 hover:underline transition-all"
+                >
+                   Clear
+                </button>
           <button 
             onClick={() => {
-              if (range?.from && range?.to) onApply(range.from, range.to);
+              if (range?.from && range?.to) {
+                onApply(range.from, range.to, bookingPriceData?.totalPrice);
+              }
             }}
-            disabled={!range?.from || !range?.to}
-            className={`px-6 py-2.5 rounded-xl font-semibold transition-colors text-sm shadow-sm ${
-              range?.from && range?.to 
-                ? "bg-blue-500 text-white hover:bg-blue-600" 
+            disabled={!range?.from || !range?.to || isCalculatingPrice}
+            className={clsx(
+              "px-8 py-3 rounded-2xl font-semibold transition-all text-sm tracking-wide",
+              range?.from && range?.to && !isCalculatingPrice
+                ? "bg-blue-600 text-white hover:bg-blue-700 active:scale-95 shadow-lg shadow-blue-600/20"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed"
-            }`}
+            )}
           >
-            {nights > 0 ? `Apply • ${nights} nights` : "Apply"}
+            {isCalculatingPrice 
+              ? "Calculating..." 
+              : nights > 0 
+                ? `Book ${nights} ${nights === 1 ? 'night' : 'nights'}` 
+                : "Select Dates"}
           </button>
         </div>
-
       </div>
-    </>
+    </div>
   );
+
 };

@@ -34,7 +34,6 @@ export function HotelGallery({ images }: HotelGalleryProps) {
         src={activeImage.path}
         alt="Hotel Main View"
         fill
-        priority
         unoptimized={true} 
         className="object-cover object-center transition-all duration-300"
         sizes="100vw"

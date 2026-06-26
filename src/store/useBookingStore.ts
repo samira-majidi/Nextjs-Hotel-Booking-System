@@ -10,7 +10,7 @@ export interface BookingState {
   totalPrice?: number | null; 
   reservationId: string | number | null;
   
-  // 👈 اطلاعات جدید برای صفحه Success
+  // اطلاعات جدید برای صفحه Success
   hotelName: string | null;
   roomName: string | null;
   roomNumber: string | null;
@@ -30,9 +30,9 @@ export interface BookingState {
     checkIn: string; 
     checkOut: string; 
     totalPrice?: number | null;
-    hotelName?: string | null;  // 👈 اضافه شد
-    roomName?: string | null;   // 👈 اضافه شد
-    roomNumber?: string | null; // 👈 اضافه شد
+    hotelName?: string | null;
+    roomName?: string | null;
+    roomNumber?: string | null;
   }) => void;
 
   setReservationId: (id: string | number) => void;
@@ -52,23 +52,20 @@ export const useBookingStore = create<BookingState>()(
       totalPrice: null,
       reservationId: null,
       
-      // 👈 مقادیر اولیه فیلدهای جدید
       hotelName: null,
       roomName: null,
       roomNumber: null,
 
-      // مقادیر اولیه فرم کاربر
       fullName: '',
       phoneNumber: '',
 
-      // مقدار اولیه هیدریشن
       _hasHydrated: false,
 
-      // توابع آپدیت‌کننده
       setHasHydrated: (state) => set({ _hasHydrated: state }),
 
+      // ✨ اینجا رو ببین! ✨
       setBookingDetails: (details) => set((state) => ({
-        ...state, // حفظ استیت‌های قبلی
+        ...state,
         hotelId: details.hotelId,
         roomId: details.roomId,
         checkIn: details.checkIn,
@@ -77,6 +74,7 @@ export const useBookingStore = create<BookingState>()(
         ...(details.hotelName !== undefined && { hotelName: details.hotelName }),
         ...(details.roomName !== undefined && { roomName: details.roomName }),
         ...(details.roomNumber !== undefined && { roomNumber: details.roomNumber }),
+        reservationId: null, // 👈 جادو اینجا اتفاق میفته! هر بار جزئیات عوض بشه، رزرو قبلی پاک میشه
       })),
       
       setReservationId: (id) => set({ reservationId: id }),
@@ -90,16 +88,15 @@ export const useBookingStore = create<BookingState>()(
         checkOut: null,
         totalPrice: null,
         reservationId: null, 
-        hotelName: null,  // 👈 ریست کردن فیلدهای جدید
-        roomName: null,   // 👈 ریست کردن فیلدهای جدید
-        roomNumber: null, // 👈 ریست کردن فیلدهای جدید
+        hotelName: null,
+        roomName: null,
+        roomNumber: null,
         fullName: '',
         phoneNumber: '',
       }),
     }),
     {
       name: 'booking-storage',
-      // وقتی لود کردن اطلاعات از لوکال استوریج تموم میشه، این تابع اجرا میشه
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },

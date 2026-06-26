@@ -1,6 +1,7 @@
 'use client';
 
 import { differenceInDays, parseISO } from 'date-fns'; // 👈 اضافه شد برای محاسبه روزها
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -43,10 +44,10 @@ export default function BookingSuccessPage() {
   const safeBasePrice = Number(roomDetails?.basePrice) || 0;
   const safeNights = Number(nights) || 0;
   const roomRate = safeBasePrice * safeNights;
-  const resortFee = 80;
+ // const resortFee = 80;
   const taxesAndFees = roomRate * 0.1; 
   // اگر دیتای API لود شده بود، قیمت جدید رو حساب کن
-  const apiTotalAmount = (roomRate > 0) ? (roomRate + resortFee + taxesAndFees) : null;
+  const apiTotalAmount = (roomRate > 0) ? (roomRate + taxesAndFees) : null;
 
   // 🌟 اولویت‌بندی دیتا: اول API، بعد استور، در نهایت مقدار پیش‌فرض (Fallback)
   const finalHotelName = apiHotelName || storeHotelName || 'Abbasi Hotel Isfahan';
@@ -56,10 +57,6 @@ export default function BookingSuccessPage() {
   const handleGoHome = () => {
     clearBookingDetails();
     router.push('/');
-  };
-
-  const handleViewBookings = () => {
-    router.push('/my-bookings'); 
   };
 
   if (!isMounted) {
@@ -72,12 +69,12 @@ export default function BookingSuccessPage() {
         <div className="bg-white p-6 rounded-[24px] shadow-sm border border-gray-100 text-center max-w-sm w-full">
           <h1 className="text-xl font-bold mb-2 text-red-500">No Active Booking</h1>
           <p className="text-gray-500 text-sm mb-5">We could not find any recent booking details.</p>
-          <button 
-            onClick={() => router.push('/')} 
-            className="w-full py-2.5 bg-[#1d4ed8] text-white font-medium rounded-xl hover:bg-blue-800 transition-colors"
-          >
-            Back to Homepage
-          </button>
+       <Link 
+  href="/" 
+  className="w-full py-2.5 bg-[#1d4ed8] text-white font-medium rounded-xl hover:bg-blue-800 transition-colors inline-flex justify-center items-center"
+>
+  Back to Homepage
+</Link>
         </div>
       </div>
     );
@@ -188,21 +185,27 @@ export default function BookingSuccessPage() {
         </div>
 
         <div className="flex gap-3">
-          <button
-            onClick={handleViewBookings}
-            className="flex-1 py-2.5 bg-[#1a4bcf] text-white text-[13px] font-semibold rounded-xl hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
-            My Bookings
-          </button>
+         <Link
+  href="/my-reservations"
+  onClick={handleGoHome} 
+  className="flex-1 py-2.5 bg-[#1a4bcf] text-white text-[13px] font-semibold rounded-xl hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"
+>
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+  </svg>
+  My Bookings
+</Link>
           
-          <button
-            onClick={handleGoHome}
-            className="flex-1 py-2.5 bg-white border border-[#1a4bcf]/20 text-[#1a4bcf] text-[13px] font-semibold rounded-xl hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-            Back to Home
-          </button>
+         <Link
+  href="/"
+  onClick={handleGoHome} // اگر لازمه قبل رفتن به هوم استور پاک بشه
+  className="flex-1 py-2.5 bg-white border border-[#1a4bcf]/20 text-[#1a4bcf] text-[13px] font-semibold rounded-xl hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+>
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+  </svg>
+  Back to Home
+</Link>
         </div>
 
       </div>

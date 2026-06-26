@@ -1,7 +1,8 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query'; // 👈 اضافه شد
+import { useQueryClient } from '@tanstack/react-query';
 import { differenceInDays, format, parse } from 'date-fns';
+import { X } from 'lucide-react'; // 👈 آیکون ضربدر رو اضافه کردیم
 import React, { useState } from 'react';
 
 import { RoomDto } from '@/entities/room/model/types';
@@ -10,10 +11,9 @@ import { useSmartRouter } from '@/shared/utils/useSmartRoter';
 import { useBookingStore } from '@/store/useBookingStore';
 
 import { RoomDatePickerModal } from './RoomDatePickerModal';
-// اگه تایپ RoomDto رو داری ایمپورت کن، وگرنه any بذار موقتاً
 
 export interface BookRoomButtonProps {
-  hotelId: string|number;
+  hotelId: string | number;
   roomId: string;
   isAvailable: boolean;
   basePrice: string | number;
@@ -27,12 +27,12 @@ export const BookRoomButton: React.FC<BookRoomButtonProps> = ({
   roomId,
   isAvailable,
   basePrice,
-  roomData, // 👈 اضافه شد
+  roomData,
   className = '',
 }) => {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   
-  const queryClient = useQueryClient(); // 👈 اضافه شد
+  const queryClient = useQueryClient();
   const { pushWithParams } = useSmartRouter();
   const numericPrice = Number(basePrice) || 0;
 
@@ -46,11 +46,10 @@ export const BookRoomButton: React.FC<BookRoomButtonProps> = ({
   const setBookingDetails = useBookingStore((state) => state.setBookingDetails);
   const clearBookingDetails = useBookingStore((state) => state.clearBookingDetails);
 
-const isCurrentRoomSelected = 
+  const isCurrentRoomSelected = 
     _hasHydrated && 
     String(storedHotelId) === String(hotelId) && 
     String(storedRoomId) === String(roomId);
-
 
   const checkInDate = isCurrentRoomSelected && storedCheckIn
       ? parse(storedCheckIn, 'yyyy-MM-dd', new Date())
@@ -62,17 +61,23 @@ const isCurrentRoomSelected =
 
   const handleApplyDates = (newCheckIn: Date, newCheckOut: Date) => {
     setIsCalendarOpen(false);
+    
+    // 💡 رفع مشکل صفر شدن قیمت در پرداخت:
+    // محاسبه شب‌ها و قیمت کل همینجا انجام میشه و به استور پاس داده میشه
+    const calculatedNights = differenceInDays(newCheckOut, newCheckIn);
+    const calculatedTotalPrice = calculatedNights * numericPrice;
+
     setBookingDetails({
-       hotelId: String(hotelId),
+      hotelId: String(hotelId),
       roomId,
       checkIn: format(newCheckIn, 'yyyy-MM-dd'),
       checkOut: format(newCheckOut, 'yyyy-MM-dd'),
+      totalPrice: calculatedTotalPrice, // 👈 قیمت نهایی تو استور ذخیره میشه!
     });
   };
 
   const handleCancelReservation = () => {
     clearBookingDetails(); 
-    // 👈 پاک کردن دیتای این اتاق خاص از کش ری‌اکت کوئری
     queryClient.removeQueries({ queryKey: ['room', roomId] });
   };
 
@@ -82,7 +87,6 @@ const isCurrentRoomSelected =
   const handleBookRoom = () => {
     if (!checkInDate || !checkOutDate) return;
 
-    // 👈 جادوی کش کردن! دیتای اتاق رو برای صفحه بعدی آماده می‌ذاریم تو کش
     if (roomData) {
       queryClient.setQueryData(['room', roomId], roomData);
     }
@@ -113,23 +117,25 @@ const isCurrentRoomSelected =
       <div className={`flex flex-col items-center sm:items-end gap-3 ${className}`}>
         <span className="text-sm font-medium text-gray-600">
           Total for {nights} nights:{' '}
-          <strong className="text-gray-900">${totalPrice.toLocaleString()}</strong>
+          <strong className="text-gray-900">€{totalPrice.toLocaleString()}</strong>
         </span>
         
         <div className="flex w-full sm:w-auto gap-2">
+          {/* ✨ دکمه کنسل/پاک‌کردن تاریخ‌ها (جمع و جور و استاندارد) */}
           <button
             onClick={handleCancelReservation}
-            className="flex flex-1 sm:flex-none justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-sm font-semibold py-2.5 px-4 rounded-lg transition-colors whitespace-nowrap"
+            title="Clear selected dates"
+            className="flex items-center justify-center p-2.5 bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 rounded-lg transition-colors duration-200 shrink-0"
           >
-            Cancel
+            <X className="w-5 h-5" />
           </button>
 
-          <button
-            onClick={handleBookRoom}
-            className="flex flex-1 sm:flex-none justify-center bg-green-50 hover:bg-green-100 text-green-700 text-sm font-semibold py-2.5 px-6 rounded-lg transition-colors whitespace-nowrap"
-          >
-            Book Room
-          </button>
+         <button
+  onClick={handleBookRoom}
+  className="flex flex-1 sm:flex-none justify-center bg-white hover:bg-blue-50 text-blue-600 border border-blue-600 text-sm font-semibold py-2.5 px-6 rounded-lg transition-colors whitespace-nowrap"
+>
+  Book Room
+</button>
         </div>
       </div>
     );
@@ -145,7 +151,7 @@ const isCurrentRoomSelected =
       </button>
 
       {isCalendarOpen && (
-        <RoomDatePickerModal onClose={() => setIsCalendarOpen(false)} onApply={handleApplyDates} />
+        <RoomDatePickerModal  roomId={roomId} onClose={() => setIsCalendarOpen(false)} onApply={handleApplyDates} />
       )}
     </div>
   );

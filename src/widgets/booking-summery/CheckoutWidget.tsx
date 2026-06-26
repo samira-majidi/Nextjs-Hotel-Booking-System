@@ -1,43 +1,38 @@
 'use client';
 
-import { useRouter } from 'next/navigation'; // اضافه شدن روتر
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
-// آدرس‌ها رو بر اساس پروژه‌ات تنظیم کن
 import PaymentCheckout from '@/features/payment/ui/PaymentForm';
 import ReservationForm from '@/features/reservation/ui/ReservationForm';
-
-type CheckoutStep = 'details' | 'payment';
+// استور خودت رو ایمپورت کن
+import { useBookingStore } from '@/store/useBookingStore';
 
 export default function CheckoutWidget() {
-  const router = useRouter(); // تعریف روتر
-  const [step, setStep] = useState<CheckoutStep>('details');
-  const [reservationId, setReservationId] = useState<string | number | null>(null);
+  const router = useRouter();
+  
+ 
+  const reservationId = useBookingStore((state) => state.reservationId);
+  const setReservationId = useBookingStore((state) => state.setReservationId);
 
-  // فرم اطلاعات کاربر
-  if (step === 'details') {
-    return (
-      <ReservationForm 
-        onSuccess={(id) => {
-          setReservationId(id);
-          setStep('payment'); // با موفقیت در رزرو، میریم به مرحله پرداخت
-        }} 
-      />
-    );
-  }
-
-  // فرم پرداخت
-  if (step === 'payment' && reservationId) {
+// اگر آیدی رزرو تو استور باشه، یعنی قبلا فرم رو پر کرده و باید پول بده! 💸
+  if (reservationId) {
     return (
       <PaymentCheckout 
         reservationId={reservationId} 
         onSuccess={() => {
-          // وقتی پرداخت موفق بود، برو به صفحه موفقیت 🎉
+          // بعد از موفقیت هم می‌تونی آیدی رو از استور پاک کنی هم بری صفحه موفقیت
           router.replace('/success');
         }} 
       />
     );
   }
 
-  return null;
+  return (
+    <ReservationForm 
+      onSuccess={(id) => {
+        // به جای استیت لوکال، می‌فرستیم تو قلب استور!
+        setReservationId(id);
+      }} 
+    />
+  );
 }

@@ -2,8 +2,10 @@ import { API_URL } from '@/shared/config/env';
 
 export const fetchCitiesFromApi = async () => {
   const res = await fetch(`${API_URL}/city`, { 
-    next: { revalidate: 86400 } 
-});
+    // کش ۲۴ ساعته ($86400$ ثانیه) + تگ برای Revalidation دستی 🚀
+    next: { tags: ['cities-collection'], revalidate: 86400 } 
+  });
+  
   if (!res.ok) {
     throw new Error('Failed to fetch cities');
   }

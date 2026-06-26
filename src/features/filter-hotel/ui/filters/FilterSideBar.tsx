@@ -51,7 +51,7 @@ export default function SidebarFilter() {
     if (updatedFilters.amenities.length > 0) params.set('amenities', updatedFilters.amenities.join(','));
     else params.delete('amenities');
 
-    router.push(`${pathname}?${params.toString()}`);
+    router.push(`${pathname}?${params.toString()}` ,  { scroll: false });
   };
 
   useEffect(() => {

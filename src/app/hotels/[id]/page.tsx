@@ -27,7 +27,7 @@ export default async function HotelDetailsPage({ params }: HotelPageProps) {
   return (
     <main className="min-h-screen bg-gray-50 pb-20 relative">
       <HotelGallery images={hotelData.data.galleryImages || []} />
-
+      
       {/* بخش اول: اطلاعات بالای صفحه */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <HotelInfo
@@ -38,7 +38,6 @@ export default async function HotelDetailsPage({ params }: HotelPageProps) {
       </div>
 
       {/* 💻 نوار جستجو - دسکتاپ */}
-      {/* 🌟 تغییر: استفاده از my-6 برای ایجاد فاصله یکدست از بالا و پایین */}
       <div className="my-6 hidden lg:block w-full bg-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] border-y border-gray-100">
         <div className="max-w-7xl mx-auto">
           <SearchForm />
@@ -46,7 +45,6 @@ export default async function HotelDetailsPage({ params }: HotelPageProps) {
       </div>
 
       {/* 📱 فرم جستجو - موبایل */}
-      {/* 🌟 تغییر: استفاده از my-6 برای هماهنگی فاصله در موبایل */}
       <div className="my-6 block lg:hidden w-full px-4">
         <EditDatesBanner>
            <SearchForm />
@@ -65,22 +63,23 @@ export default async function HotelDetailsPage({ params }: HotelPageProps) {
             <section id="about" className="scroll-mt-32">
               <HotelAbout description={hotelData.data.description} /> 
             </section>
- 
+            
+            <section id="amenities" className="scroll-mt-32">
+              <HotelAmenities amenities={hotelData.data.amenities} />
+            </section>
+
             <section id="rooms" className="scroll-mt-32">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <h2 className="text-2xl font-bold">Available Rooms</h2>
               </div>
               <HotelRoomsList rooms={roomsData.data.data}/>
             </section>
-            
-            <section id="amenities" className="scroll-mt-32">
-              <HotelAmenities amenities={hotelData.data.amenities} />
-            </section>
+          
           </div>
-
-          {/* ستون سمت راست */}
+   {/* ستون سمت راست */}
           <div className="lg:col-span-1">
-            <div className="lg:sticky lg:top-32 space-y-6">
+            {/* 🌟 تغییر: space-y-6 تبدیل شد به space-y-12 تا فاصله‌ی بین قوانین و نقشه بیشتر بشه */}
+            <div className="space-y-12 pb-32">
               
               <section id="rules" className="scroll-mt-32">
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_4px_20px_rgb(0,0,0,0.03)] p-6">

@@ -1,7 +1,8 @@
+
 import Image from 'next/image';
+import { Suspense } from 'react';
 
 import { fetchCitiesFromApi } from '@/entities/hotel/api/getCities';
-// 👇 مسیر این ایمپورت رو بر اساس فایلی که ساختی تنظیم کن
 import { fetchFeaturedHotels } from '@/entities/hotel/api/getFeaturedHotel';
 import SearchForm from '@/features/search-hotel/ui/searchForm';
 import { mergeCityData } from '@/shared/utils/cityUtils';
@@ -10,31 +11,38 @@ import MostBookedHotels from '@/widgets/home-section/ui/MostBookedHotel';
 import PopularDestinations from '@/widgets/home-section/ui/Populardestination';
 import WhyChooseUs from '@/widgets/home-section/ui/WhyChooseUs';
 
-export default async function Page() {
-  // ⚡ اجرای همزمان هر دو درخواست برای پرفورمنس بهتر
-  const [apiCities, featuredHotels] = await Promise.all([
-    fetchCitiesFromApi(),
-    fetchFeaturedHotels(),
-  ]);
-
-console.log("خروجی API هتل‌های ویژه:", featuredHotels); // 👈 این خط رو اضافه کن
-
+// 1️⃣ کامپوننت کمکی برای لود مقاصد پرطرفدار (آسنکرون)
+async function PopularDestinationsWrapper() {
+  const apiCities = await fetchCitiesFromApi();
   const finalDestinations = mergeCityData(apiCities);
+  return <PopularDestinations destinations={finalDestinations} />;
+}
+
+// 2️⃣ کامپوننت کمکی برای لود هتل‌های ویژه (آسنکرون)
+async function MostBookedHotelsWrapper() {
+  const featuredHotels = await fetchFeaturedHotels();
+  // eslint-disable-next-line no-console
+  console.log("خروجی API هتل‌های ویژه:", featuredHotels);
+  return <MostBookedHotels hotels={featuredHotels} />;
+}
+
+export default function Page() {
+  // ⚡ دیگر هیچ await بلاک‌کننده‌ای اینجا وجود ندارد! صفحه فوراً رندر می‌شود.
 
   return (
     <main>
-      {/* 1. overflow-hidden حذف شد */}
-      {/* 2. z-50 اضافه شد تا این سکشن همیشه روی بقیه باشه */}
-      <section className="relative z-50 w-full flex flex-col items-center justify-center px-4">
+      {/* z-50 اضافه شد. همچنین min-h-[600px] md:min-h-[700px] برای رفع CLS اضافه شد */}
+      <section className="relative z-50 w-full min-h-[600px] md:min-h-[700px] flex flex-col items-center justify-center px-4">
 
         {/* تصویر پس‌زمینه */}
         <Image
-          src="/hero1.png"
+          src="/hero1.webp"
           alt="Luxury hotel lobby - Hero Image"
           fill
+          sizes="(max-width: 768px) 100vw, 100vw"
           className="object-cover object-center"
           priority
-          quality={90}
+          quality={75}
         />
 
         {/* لایه تیره روی تصویر */}
@@ -59,15 +67,26 @@ console.log("خروجی API هتل‌های ویژه:", featuredHotels); // 👈
 
           {/* کامپوننت فرم جستجو */}
           <div className="w-full flex justify-center pb-12 md:pb-20 mt-4">
-            <SearchForm />
+            <Suspense 
+              fallback={
+                <div className="w-full max-w-4xl h-16 bg-white/20 backdrop-blur-md animate-pulse rounded-xl border border-white/30" />
+              }
+            >
+              <SearchForm />
+            </Suspense>
           </div>
         </div>
       </section>
 
-      <PopularDestinations destinations={finalDestinations} />
+      {/* بخش مقاصد با Suspense */}
+      <Suspense fallback={<div className="h-64 flex items-center justify-center">در حال بارگذاری مقاصد...</div>}>
+        <PopularDestinationsWrapper />
+      </Suspense>
       
-      {/* 👇 دیتای دریافت شده به کامپوننت پاس داده شد */}
-      <MostBookedHotels hotels={featuredHotels} />
+      {/* بخش هتل‌ها با Suspense */}
+      <Suspense fallback={<div className="h-64 flex items-center justify-center">در حال بارگذاری هتل‌ها...</div>}>
+        <MostBookedHotelsWrapper />
+      </Suspense>
       
       <WhyChooseUs />
       <FAQSection />

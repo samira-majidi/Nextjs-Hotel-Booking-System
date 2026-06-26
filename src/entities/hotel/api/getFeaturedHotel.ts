@@ -6,8 +6,8 @@ export async function fetchFeaturedHotels(): Promise<Hotel[]> {
   const targetUrl = `${API_URL}/hotels/random/featured`;
 
   const res = await fetch(targetUrl, {
-    // کش کردن دیتا برای ۳ روز (۲۵۹۲۰۰ ثانیه) 🚀
-    next: { revalidate: 259200 },
+    // کش کردن دیتا برای ۳ روز ($259200$ ثانیه) + تگ برای Revalidation دستی 🚀
+    next: { tags: ['featured-hotels'], revalidate: 259200 },
   });
 
   if (!res.ok) {

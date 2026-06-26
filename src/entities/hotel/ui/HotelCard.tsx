@@ -40,15 +40,17 @@ export default function HotelCard({ hotel, queryString, layout = 'vertical' }: H
             : 'w-full h-40' // در حالت عمودی (کارت‌های قبلی)
         }`}
       >
-        <Image
-          src={coverImage}
-          alt={hotel.name}
-          fill
-          unoptimized={true}
-          priority={true}
-          className="object-cover"
-          sizes="(max-width: 768px) 100vw, 50vw"
-        />
+      <Image
+  src={coverImage}
+  alt={hotel.name}
+  fill
+  unoptimized={true}
+  className="object-cover"
+  // sizes دقیق برای کارت‌های تو:
+  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
+  // کیفیت را روی ۷۵ بگذار که هم عالی باشد هم سبک
+  quality={75}
+/>
         <button className="absolute top-2 right-2 bg-white p-1.5 rounded-full shadow-sm hover:bg-gray-50 transition-colors z-10">
           <Heart className="w-3.5 h-3.5 text-gray-600" />
         </button>
